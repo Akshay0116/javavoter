@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Online Voting System — Official Portal</title>
-    <meta name="description" content="Online Voting System — Minimal and secure voting portal.">
-    <!-- Clean, classic, readable typography -->
+    <meta name="description" content="Online Voting System — Minimal and secure voting portal with 2FA Admin Console.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -15,14 +14,13 @@
             --bg-card: #ffffff;
             --border-color: #cbd5e1;
             --border-dark: #94a3b8;
-            --border-radius: 4px; /* Crisp, clean, not overly rounded */
+            --border-radius: 4px; /* Crisp, clean, sharp-edge feel */
             
             --text-heading: #0f172a;
             --text-body: #334155;
             --text-muted: #64748b;
-            --text-light: #94a3b8;
 
-            --primary: #0f172a; /* Slate black/navy for clean corporate/official look */
+            --primary: #0f172a;
             --primary-hover: #1e293b;
             --accent-blue: #1d4ed8;
 
@@ -59,7 +57,6 @@
             flex-direction: column;
         }
 
-        /* Top Navigation Header */
         header {
             background: #ffffff;
             border-bottom: 1px solid var(--border-color);
@@ -99,7 +96,6 @@
             color: var(--text-muted);
         }
 
-        /* Nav Tabs */
         .nav-tabs {
             display: flex;
             border: 1px solid var(--border-color);
@@ -133,7 +129,6 @@
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
-        /* Main Container */
         main {
             max-width: 900px;
             width: 100%;
@@ -142,7 +137,6 @@
             flex: 1;
         }
 
-        /* Minimal Crisp White Card */
         .card {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -159,7 +153,7 @@
         }
 
         .card-title {
-            font-size: 1.4rem;
+            font-size: 1.35rem;
             font-weight: 700;
             color: var(--text-heading);
             margin-bottom: 0.25rem;
@@ -170,7 +164,6 @@
             font-size: 0.9rem;
         }
 
-        /* Forms & Inputs */
         .form-group {
             margin-bottom: 1.25rem;
         }
@@ -201,7 +194,6 @@
             box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.1);
         }
 
-        /* Buttons */
         .btn-primary {
             display: inline-flex;
             align-items: center;
@@ -246,7 +238,6 @@
             border-color: var(--border-dark);
         }
 
-        /* Alerts & Notice Boxes */
         .alert {
             padding: 0.85rem 1rem;
             border-radius: var(--border-radius);
@@ -271,7 +262,13 @@
             color: var(--success-text);
         }
 
-        /* Demo Helper Box */
+        .alert.info {
+            display: flex;
+            background: var(--warning-bg);
+            border: 1px solid var(--warning-border);
+            color: var(--warning-text);
+        }
+
         .demo-bar {
             margin-top: 1.5rem;
             padding: 1rem;
@@ -311,7 +308,6 @@
             background: #f1f5f9;
         }
 
-        /* Candidate Selection List */
         .candidate-list {
             display: flex;
             flex-direction: column;
@@ -391,7 +387,6 @@
             border: 1px solid var(--border-color);
         }
 
-        /* Minimal Table */
         .info-table {
             width: 100%;
             border-collapse: collapse;
@@ -426,7 +421,6 @@
             word-break: break-all;
         }
 
-        /* Results Overview */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -456,7 +450,6 @@
             letter-spacing: 0.4px;
         }
 
-        /* Simple Progress Bars */
         .tally-bar-container {
             margin-bottom: 1.25rem;
         }
@@ -487,7 +480,6 @@
             transition: width 0.4s ease;
         }
 
-        /* Status Badges */
         .badge {
             display: inline-block;
             font-size: 0.75rem;
@@ -509,7 +501,12 @@
             color: var(--text-body);
         }
 
-        /* Footer */
+        .badge-2fa {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1e40af;
+        }
+
         footer {
             border-top: 1px solid var(--border-color);
             background: #ffffff;
@@ -522,7 +519,6 @@
     </style>
 </head>
 <body>
-    <!-- Top Header -->
     <header>
         <div class="header-brand">
             <div class="header-icon">🗳️</div>
@@ -535,11 +531,10 @@
         <nav class="nav-tabs" role="tablist">
             <button class="nav-tab active" id="tabVoterPortalBtn" onclick="switchTab('voter-portal')">Voter Verification</button>
             <button class="nav-tab" id="tabLiveResultsBtn" onclick="switchTab('live-results')">Live Results</button>
-            <button class="nav-tab" id="tabAdminBtn" onclick="switchTab('admin-panel')">Administration</button>
+            <button class="nav-tab" id="tabAdminBtn" onclick="switchTab('admin-panel')">Administration (2FA)</button>
         </nav>
     </header>
 
-    <!-- Main Container -->
     <main>
         <!-- ========================================== -->
         <!-- VIEW 1: VOTER AUTHENTICATION (DEFAULT)     -->
@@ -644,9 +639,7 @@
                 <span id="ballotAlertText">Error message</span>
             </div>
 
-            <div id="candidateCardsContainer" class="candidate-list">
-                <!-- Dynamically loaded candidates -->
-            </div>
+            <div id="candidateCardsContainer" class="candidate-list"></div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 1.25rem;">
                 <button class="btn-secondary" onclick="resetToAuth()">&larr; Cancel</button>
@@ -723,18 +716,95 @@
             </div>
 
             <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-heading);">Candidate Tally:</h3>
-            <div id="resultsTalliesContainer">
-                <!-- Tally bars -->
+            <div id="resultsTalliesContainer"></div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 6A: ADMIN LOGIN (STEP 1: USER/PASS)   -->
+        <!-- ========================================== -->
+        <section id="viewAdminLogin" class="card" style="max-width: 480px; margin: 0 auto; display: none;">
+            <div class="card-header">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span class="badge badge-neutral">ADMIN PORTAL</span>
+                    <span class="badge badge-2fa">2FA PROTECTED</span>
+                </div>
+                <h2 class="card-title">Administrator Login</h2>
+                <p class="card-desc">Enter your administrative username and master password.</p>
+            </div>
+
+            <div id="adminLoginAlert" class="alert error">
+                <span id="adminLoginAlertText">Login error</span>
+            </div>
+
+            <form onsubmit="handleAdminLogin(event)">
+                <div class="form-group">
+                    <label class="form-label" for="adminUserInput">Admin Username</label>
+                    <input type="text" id="adminUserInput" class="form-input" value="admin" required autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="adminPassInput">Password</label>
+                    <input type="password" id="adminPassInput" class="form-input" value="admin123" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="btn-primary" style="width: 100%;">
+                    Proceed to Two-Factor Auth (2FA) &rarr;
+                </button>
+            </form>
+
+            <div class="demo-bar">
+                <div class="demo-label">Hard-coded Administrator Credentials:</div>
+                <div style="font-size: 0.85rem; color: var(--text-body);">
+                    Username: <code class="mono">admin</code> &bull; Password: <code class="mono">admin123</code>
+                </div>
             </div>
         </section>
 
         <!-- ========================================== -->
-        <!-- VIEW 6: ADMINISTRATION PANEL               -->
+        <!-- VIEW 6B: ADMIN 2FA CHALLENGE (STEP 2: OTP) -->
+        <!-- ========================================== -->
+        <section id="viewAdmin2FA" class="card" style="max-width: 480px; margin: 0 auto; display: none;">
+            <div class="card-header">
+                <span class="badge badge-2fa" style="margin-bottom: 0.5rem;">STEP 2 OF 2 &bull; 2FA SECURITY</span>
+                <h2 class="card-title">Two-Factor Authentication</h2>
+                <p class="card-desc">Enter the 6-digit security code issued to the administrator device.</p>
+            </div>
+
+            <div id="admin2faAlert" class="alert error">
+                <span id="admin2faAlertText">2FA error</span>
+            </div>
+
+            <!-- Demo 2FA Notice showing issued code for easy testing -->
+            <div class="alert info" style="display: flex; margin-bottom: 1.25rem;">
+                <span>🔐 Authenticator Code Sent: <strong id="adminIssuedOtpDisplay" class="mono" style="font-size: 1rem; color: #1e40af;"></strong></span>
+            </div>
+
+            <form onsubmit="handleAdminVerify2FA(event)">
+                <div class="form-group">
+                    <label class="form-label" for="adminOtpInput">6-Digit Security Code (OTP)</label>
+                    <input type="text" id="adminOtpInput" class="form-input mono" placeholder="e.g. 123456" maxlength="6" style="letter-spacing: 4px; font-size: 1.2rem; text-align: center;" required autocomplete="one-time-code">
+                </div>
+
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="button" class="btn-secondary" onclick="showAdminLoginForm()" style="flex: 1;">&larr; Back</button>
+                    <button type="submit" class="btn-primary" style="flex: 2;">Verify &amp; Enter &rarr;</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 6C: ADMIN DASHBOARD (2FA AUTHORIZED)  -->
         <!-- ========================================== -->
         <section id="viewAdminPanel" class="card" style="display: none;">
-            <div class="card-header">
-                <h2 class="card-title">Election Administration</h2>
-                <p class="card-desc">Manage candidate and voter registries, export summary reports, and review audit records.</p>
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+                        <h2 class="card-title" style="margin: 0;">Election Administration</h2>
+                        <span class="badge badge-active">2FA Authenticated</span>
+                    </div>
+                    <p class="card-desc">Manage candidate and voter rosters, review audit records, and export reports.</p>
+                </div>
+                <button class="btn-secondary" style="font-size: 0.85rem;" onclick="handleAdminLogout()">Log Out Administrator</button>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
@@ -779,10 +849,15 @@
                 </div>
             </div>
 
-            <!-- Export Summary Button -->
+            <!-- Export Summary Button with Direct Browser Download -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-color);">
-                <h4 style="font-size: 0.95rem; color: var(--text-heading);">Official Audit Log</h4>
-                <button class="btn-secondary" style="font-size: 0.85rem; padding: 0.45rem 0.85rem;" onclick="exportSummaryFile()">Export results_summary.txt</button>
+                <div>
+                    <h4 style="font-size: 0.95rem; color: var(--text-heading); margin-bottom: 0.2rem;">Official Audit Log</h4>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Secret ballot protected (Candidate selections are concealed)</p>
+                </div>
+                <button class="btn-secondary" style="font-size: 0.85rem; padding: 0.55rem 1rem; border-color: var(--accent-blue); color: var(--accent-blue);" onclick="exportAndDownloadSummaryFile()">
+                    ⬇️ Download results_summary.txt
+                </button>
             </div>
 
             <div style="overflow-x: auto;">
@@ -803,9 +878,8 @@
         </section>
     </main>
 
-    <!-- Footer -->
     <footer>
-        Online Voting System &bull; Java Backend &bull; AES-256 Encryption &bull; Clean Architecture
+        Online Voting System &bull; Java Backend &bull; AES-256-GCM &bull; 2FA Protected Admin Console
     </footer>
 
     <!-- Frontend Script Logic -->
@@ -813,6 +887,10 @@
         let currentVoter = null;
         let selectedCandidateId = null;
         let pollingInterval = null;
+
+        // Admin 2FA State
+        let adminTempToken = null;
+        let adminToken = localStorage.getItem('secureVote_adminToken') || null;
 
         function switchTab(tabName) {
             document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
@@ -822,6 +900,8 @@
             document.getElementById('viewVotingBallot').style.display = 'none';
             document.getElementById('viewVoteSuccess').style.display = 'none';
             document.getElementById('viewLiveResults').style.display = 'none';
+            document.getElementById('viewAdminLogin').style.display = 'none';
+            document.getElementById('viewAdmin2FA').style.display = 'none';
             document.getElementById('viewAdminPanel').style.display = 'none';
 
             if (tabName === 'voter-portal') {
@@ -837,11 +917,144 @@
                 fetchLiveResults();
             } else if (tabName === 'admin-panel') {
                 document.getElementById('tabAdminBtn').classList.add('active');
-                document.getElementById('viewAdminPanel').style.display = 'block';
-                fetchAuditLog();
+                if (adminToken) {
+                    document.getElementById('viewAdminPanel').style.display = 'block';
+                    fetchAuditLog();
+                } else {
+                    showAdminLoginForm();
+                }
             }
         }
 
+        // --- ADMIN LOGIN & 2FA WORKFLOW ---
+        function showAdminLoginForm() {
+            document.getElementById('viewAdminLogin').style.display = 'block';
+            document.getElementById('viewAdmin2FA').style.display = 'none';
+            document.getElementById('viewAdminPanel').style.display = 'none';
+            hideAlert('adminLoginAlert');
+        }
+
+        async function handleAdminLogin(e) {
+            e.preventDefault();
+            hideAlert('adminLoginAlert');
+
+            const user = document.getElementById('adminUserInput').value.trim();
+            const pass = document.getElementById('adminPassInput').value.trim();
+
+            try {
+                const res = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                const data = await res.json();
+                if (!data.success) {
+                    showAlert('adminLoginAlert', data.error || 'Authentication failed.');
+                    return;
+                }
+
+                // Step 1 Success: Move to 2FA Step 2
+                adminTempToken = data.tempToken;
+                document.getElementById('adminIssuedOtpDisplay').textContent = data.otpCode;
+                document.getElementById('adminOtpInput').value = data.otpCode; // Pre-filled for demo convenience
+
+                document.getElementById('viewAdminLogin').style.display = 'none';
+                document.getElementById('viewAdmin2FA').style.display = 'block';
+                hideAlert('admin2faAlert');
+            } catch (err) {
+                showAlert('adminLoginAlert', 'Network error: ' + err.message);
+            }
+        }
+
+        async function handleAdminVerify2FA(e) {
+            e.preventDefault();
+            hideAlert('admin2faAlert');
+
+            const otp = document.getElementById('adminOtpInput').value.trim();
+            if (!otp || otp.length !== 6) {
+                showAlert('admin2faAlert', 'Please enter a valid 6-digit security code.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/verify-2fa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tempToken: adminTempToken, otp: otp })
+                });
+
+                const data = await res.json();
+                if (!data.success) {
+                    showAlert('admin2faAlert', data.error || 'Invalid 2FA code.');
+                    return;
+                }
+
+                // 2FA Verified! Save token and unlock Admin Dashboard
+                adminToken = data.adminToken;
+                localStorage.setItem('secureVote_adminToken', adminToken);
+
+                document.getElementById('viewAdmin2FA').style.display = 'none';
+                document.getElementById('viewAdminPanel').style.display = 'block';
+                fetchAuditLog();
+            } catch (err) {
+                showAlert('admin2faAlert', '2FA verification error: ' + err.message);
+            }
+        }
+
+        async function handleAdminLogout() {
+            if (adminToken) {
+                try {
+                    await fetch('/api/admin/logout', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + adminToken }
+                    });
+                } catch (e) {}
+            }
+            adminToken = null;
+            adminTempToken = null;
+            localStorage.removeItem('secureVote_adminToken');
+            showAdminLoginForm();
+        }
+
+        // --- DIRECT BROWSER FILE DOWNLOAD EXPORT ---
+        async function exportAndDownloadSummaryFile() {
+            if (!adminToken) {
+                alert('Administrator session expired. Please re-login.');
+                showAdminLoginForm();
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/export', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + adminToken }
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert(err.error || 'Export failed');
+                    return;
+                }
+
+                // Get file blob from HTTP response attachment
+                const blob = await res.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = 'results_summary.txt';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(downloadUrl);
+
+                alert('✓ Official results_summary.txt downloaded successfully to your device!');
+            } catch (err) {
+                alert('Export failed: ' + err.message);
+            }
+        }
+
+        // --- VOTER PORTAL LOGIC ---
         function resetToAuth() {
             currentVoter = null;
             selectedCandidateId = null;
@@ -867,7 +1080,6 @@
             document.getElementById(elemId).style.display = 'none';
         }
 
-        // --- STEP 1: VOTER AUTHENTICATION ---
         async function handleVoterVerification(e) {
             e.preventDefault();
             hideAlert('authAlert');
@@ -923,7 +1135,6 @@
             }
         }
 
-        // --- STEP 2: LOAD CANDIDATES & CAST BALLOT ---
         async function loadCandidatesForBallot() {
             try {
                 const res = await fetch('/api/candidates');
@@ -1005,7 +1216,7 @@
             }
         }
 
-        // --- STEP 3: LIVE RESULTS ---
+        // --- LIVE RESULTS ---
         async function fetchLiveResults() {
             try {
                 const res = await fetch('/api/live-results');
@@ -1054,16 +1265,21 @@
             }
         }
 
-        // --- STEP 4: ADMIN ACTIONS ---
+        // --- ADMIN ACTIONS ---
         async function handleAdminAddCandidate(e) {
             e.preventDefault();
+            if (!adminToken) { showAdminLoginForm(); return; }
+
             const cid = document.getElementById('adminCandidateId').value.trim();
             const cname = document.getElementById('adminCandidateName').value.trim();
             const cparty = document.getElementById('adminCandidateParty').value.trim();
 
             const res = await fetch('/api/admin/candidate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + adminToken
+                },
                 body: JSON.stringify({ candidateId: cid, name: cname, party: cparty })
             });
             const data = await res.json();
@@ -1077,13 +1293,18 @@
 
         async function handleAdminAddVoter(e) {
             e.preventDefault();
+            if (!adminToken) { showAdminLoginForm(); return; }
+
             const vid = document.getElementById('adminVoterId').value.trim();
             const vname = document.getElementById('adminVoterName').value.trim();
             const vpin = document.getElementById('adminVoterPin').value.trim();
 
             const res = await fetch('/api/admin/voter', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + adminToken
+                },
                 body: JSON.stringify({ voterId: vid, name: vname, pin: vpin })
             });
             const data = await res.json();
@@ -1118,16 +1339,6 @@
                 });
             } catch (err) {
                 console.error('Error fetching audit log:', err);
-            }
-        }
-
-        async function exportSummaryFile() {
-            try {
-                const res = await fetch('/api/admin/export', { method: 'POST' });
-                const data = await res.json();
-                alert(data.message || data.error);
-            } catch (err) {
-                alert('Export failed: ' + err.message);
             }
         }
 

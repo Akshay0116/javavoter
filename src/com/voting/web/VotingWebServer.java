@@ -9,18 +9,30 @@ import com.voting.exception.VotingException;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 
 /**
  * Built-in embedded HTTP Web Server providing real-time REST endpoints and serving
- * the modern Glassmorphic Web Application interface.
- * Zero external dependencies — runs directly on standard Java SE.
+ * the modern Glassmorphic / Minimal Web Application interface.
+ * Features Administrator authentication with Two-Factor Authentication (2FA)
+ * and direct file attachment downloading for cloud deployments.
  */
 public class VotingWebServer {
+    private static final String ADMIN_USER = "admin";
+    private static final String ADMIN_PASS = "admin123";
+
     private final VotingManager manager;
     private final int port;
     private HttpServer server;
+
+    // Admin 2FA State Management
+    private final SecureRandom random = new SecureRandom();
+    private String activeTempToken = null;
+    private String activeOtpCode = null;
+    private long otpExpiresAt = 0;
+    private final Set<String> validAdminSessions = Collections.synchronizedSet(new HashSet<>());
 
     public VotingWebServer(VotingManager manager, int port) {
         this.manager = manager;
@@ -30,11 +42,19 @@ public class VotingWebServer {
     public void start() throws IOException {
         server = HttpServer.create(new InetSocketAddress(port), 0);
 
-        // API routes
+        // Public Voter API routes
         server.createContext("/api/voter/verify", new VoterVerifyHandler());
         server.createContext("/api/voter/cast", new VoteCastHandler());
         server.createContext("/api/candidates", new CandidatesHandler());
         server.createContext("/api/live-results", new LiveResultsHandler());
+
+        // Admin 2FA Authentication routes
+        server.createContext("/api/admin/login", new AdminLoginHandler());
+        server.createContext("/api/admin/verify-2fa", new AdminVerify2faHandler());
+        server.createContext("/api/admin/logout", new AdminLogoutHandler());
+        server.createContext("/api/admin/check-session", new AdminCheckSessionHandler());
+
+        // Protected Admin Action routes
         server.createContext("/api/admin/candidate", new AdminAddCandidateHandler());
         server.createContext("/api/admin/voter", new AdminAddVoterHandler());
         server.createContext("/api/audit-log", new AuditLogHandler());
@@ -43,7 +63,7 @@ public class VotingWebServer {
         // Static frontend route
         server.createContext("/", new StaticFileHandler());
 
-        server.setExecutor(null); // default executor
+        server.setExecutor(null);
         server.start();
         System.out.println("====================================================================");
         System.out.printf("  🚀 ONLINE VOTING WEB APP STARTED AT: http://localhost:%d/%n", port);
@@ -56,7 +76,125 @@ public class VotingWebServer {
         }
     }
 
-    // --- HANDLERS ---
+    private boolean isAuthorizedAdmin(HttpExchange exchange) {
+        String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7).trim();
+            return validAdminSessions.contains(token);
+        }
+        return false;
+    }
+
+    // --- ADMIN 2FA HANDLERS ---
+
+    private class AdminLoginHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendCors(exchange);
+                return;
+            }
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
+                return;
+            }
+
+            Map<String, String> body = parseJsonMap(readRequestBody(exchange));
+            String user = body.getOrDefault("username", "").trim();
+            String pass = body.getOrDefault("password", "").trim();
+
+            if (ADMIN_USER.equals(user) && ADMIN_PASS.equals(pass)) {
+                // Generate 6-digit OTP and temporary challenge token
+                int codeNum = 100000 + random.nextInt(900000);
+                activeOtpCode = String.valueOf(codeNum);
+                activeTempToken = UUID.randomUUID().toString();
+                otpExpiresAt = System.currentTimeMillis() + (5 * 60 * 1000); // 5 minutes
+
+                System.out.printf("[SECURITY] 2FA Challenge Issued for Admin. 6-Digit OTP: %s%n", activeOtpCode);
+
+                StringBuilder json = new StringBuilder("{");
+                json.append("\"success\":true,");
+                json.append("\"step\":\"2FA_REQUIRED\",");
+                json.append("\"tempToken\":\"").append(activeTempToken).append("\",");
+                json.append("\"otpCode\":\"").append(activeOtpCode).append("\","); // Returned for demo/in-browser verification
+                json.append("\"message\":\"Two-Factor Authentication required. 6-digit security OTP code generated.\"");
+                json.append("}");
+
+                sendResponse(exchange, 200, json.toString());
+            } else {
+                sendResponse(exchange, 401, "{\"success\":false,\"error\":\"Invalid administrator username or password.\"}");
+            }
+        }
+    }
+
+    private class AdminVerify2faHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendCors(exchange);
+                return;
+            }
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
+                return;
+            }
+
+            Map<String, String> body = parseJsonMap(readRequestBody(exchange));
+            String tempToken = body.getOrDefault("tempToken", "").trim();
+            String otp = body.getOrDefault("otp", "").trim();
+
+            if (activeTempToken != null && activeTempToken.equals(tempToken)
+                    && activeOtpCode != null && activeOtpCode.equals(otp)
+                    && System.currentTimeMillis() <= otpExpiresAt) {
+
+                // Clear OTP challenge and generate session token
+                activeTempToken = null;
+                activeOtpCode = null;
+
+                String sessionToken = UUID.randomUUID().toString();
+                validAdminSessions.add(sessionToken);
+
+                StringBuilder json = new StringBuilder("{");
+                json.append("\"success\":true,");
+                json.append("\"adminToken\":\"").append(sessionToken).append("\",");
+                json.append("\"message\":\"Two-Factor Authentication successful. Admin session granted.\"");
+                json.append("}");
+
+                sendResponse(exchange, 200, json.toString());
+            } else {
+                sendResponse(exchange, 401, "{\"success\":false,\"error\":\"Invalid or expired 2FA security code.\"}");
+            }
+        }
+    }
+
+    private class AdminCheckSessionHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendCors(exchange);
+                return;
+            }
+            boolean valid = isAuthorizedAdmin(exchange);
+            sendResponse(exchange, 200, "{\"authenticated\":" + valid + "}");
+        }
+    }
+
+    private class AdminLogoutHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendCors(exchange);
+                return;
+            }
+            String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                validAdminSessions.remove(authHeader.substring(7).trim());
+            }
+            sendResponse(exchange, 200, "{\"success\":true,\"message\":\"Logged out successfully.\"}");
+        }
+    }
+
+    // --- VOTER HANDLERS ---
 
     private class VoterVerifyHandler implements HttpHandler {
         @Override
@@ -210,6 +348,11 @@ public class VotingWebServer {
                 sendResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
                 return;
             }
+            if (!isAuthorizedAdmin(exchange)) {
+                sendResponse(exchange, 401, "{\"success\":false,\"error\":\"Unauthorized. Administrator login and 2FA required.\"}");
+                return;
+            }
+
             Map<String, String> body = parseJsonMap(readRequestBody(exchange));
             try {
                 Candidate c = new Candidate(body.get("candidateId"), body.get("name"), body.get("party"));
@@ -232,6 +375,11 @@ public class VotingWebServer {
                 sendResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
                 return;
             }
+            if (!isAuthorizedAdmin(exchange)) {
+                sendResponse(exchange, 401, "{\"success\":false,\"error\":\"Unauthorized. Administrator login and 2FA required.\"}");
+                return;
+            }
+
             Map<String, String> body = parseJsonMap(readRequestBody(exchange));
             try {
                 String pin = body.getOrDefault("pin", "0000");
@@ -269,6 +417,13 @@ public class VotingWebServer {
         }
     }
 
+    /**
+     * Enhanced Export Handler:
+     * Writes to local disk file "results_summary.txt" AND streams the file content
+     * as an HTTP attachment ("Content-Disposition: attachment; filename=results_summary.txt").
+     * This guarantees that when deployed to any cloud or remote server, clicking Export
+     * immediately downloads the file onto the administrator's local computer!
+     */
     private class ExportHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
@@ -276,11 +431,28 @@ public class VotingWebServer {
                 sendCors(exchange);
                 return;
             }
+            if (!isAuthorizedAdmin(exchange)) {
+                sendResponse(exchange, 401, "{\"success\":false,\"error\":\"Unauthorized. Administrator login and 2FA required.\"}");
+                return;
+            }
+
             try {
-                manager.exportSummary("results_summary.txt");
-                sendResponse(exchange, 200, "{\"success\":true,\"message\":\"Summary exported to results_summary.txt\"}");
+                String fileName = "results_summary.txt";
+                manager.exportSummary(fileName);
+
+                File f = new File(fileName);
+                byte[] bytes = java.nio.file.Files.readAllBytes(f.toPath());
+
+                exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                exchange.getResponseHeaders().set("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+                exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+                exchange.sendResponseHeaders(200, bytes.length);
+
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(bytes);
+                }
             } catch (Exception e) {
-                sendResponse(exchange, 500, "{\"success\":false,\"error\":\"" + escape(e.getMessage()) + "\"}");
+                sendResponse(exchange, 500, "{\"success\":false,\"error\":\"Export error: " + escape(e.getMessage()) + "\"}");
             }
         }
     }
@@ -302,7 +474,6 @@ public class VotingWebServer {
                 }
             }
 
-            // Fallback: If static file in web/
             File f = new File("web" + path);
             if (f.exists() && !f.isDirectory()) {
                 byte[] bytes = java.nio.file.Files.readAllBytes(f.toPath());
@@ -319,12 +490,10 @@ public class VotingWebServer {
         }
     }
 
-    // --- UTILITIES ---
-
     private void sendCors(HttpExchange exchange) throws IOException {
         exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
         exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization");
         exchange.sendResponseHeaders(204, -1);
     }
 
