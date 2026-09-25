@@ -23,8 +23,15 @@ public class Main {
         } else if (args.length > 0 && args[0].equalsIgnoreCase("--interactive")) {
             runInteractiveCLI();
         } else {
-            // Default: Start Real-Time Web Server & Application
-            startRealtimeWebServer(8080);
+            // Read PORT from environment (injected by Render, Railway, Heroku) or default to 8080
+            int port = 8080;
+            String envPort = System.getenv("PORT");
+            if (envPort != null && !envPort.trim().isEmpty()) {
+                try {
+                    port = Integer.parseInt(envPort.trim());
+                } catch (NumberFormatException ignored) {}
+            }
+            startRealtimeWebServer(port);
         }
     }
 
