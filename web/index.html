@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureVote — Real-Time Online Voting System</title>
+    <meta name="description" content="Encrypted Real-Time Online Voting System implementing OOP and AES-256-GCM encryption.">
+    <!-- Modern Typography: Outfit & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #090d16;
+            --bg-card: rgba(17, 24, 39, 0.75);
+            --bg-card-hover: rgba(30, 41, 59, 0.85);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-active: rgba(59, 130, 246, 0.6);
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.35);
+            --accent: #8b5cf6;
+            --accent-glow: rgba(139, 92, 246, 0.3);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.3);
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-sub: #64748b;
+            --font-main: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow & Grid */
+        .ambient-grid {
+            position: fixed;
+            inset: 0;
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Header Navigation */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(16px);
+            background: rgba(9, 13, 22, 0.8);
+            border-bottom: 1px solid var(--border-glass);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .brand-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .brand-name {
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #fff, #93c5fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .badge-realtime {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.65rem;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #34d399;
+        }
+
+        .pulse-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #10b981;
+            box-shadow: 0 0 8px #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.3); }
+        }
+
+        /* Nav Tabs */
+        .nav-tabs {
+            display: flex;
+            background: rgba(17, 24, 39, 0.6);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .nav-tab {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.5rem 1.1rem;
+            border-radius: 8px;
+            font-family: var(--font-main);
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-tab:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-tab.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        /* Main Container */
+        main {
+            position: relative;
+            z-index: 10;
+            max-width: 1100px;
+            width: 100%;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            flex: 1;
+        }
+
+        /* Card Styles */
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            padding: 2.25rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .card-header {
+            margin-bottom: 1.75rem;
+            text-align: center;
+        }
+
+        .card-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Form Inputs */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.85rem 1.15rem;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            color: #fff;
+            font-family: var(--font-main);
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 16px var(--primary-glow);
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            width: 100%;
+            padding: 0.95rem 1.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-family: var(--font-main);
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            box-shadow: 0 8px 24px var(--primary-glow);
+            transition: all 0.25s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px var(--primary-glow);
+            filter: brightness(1.1);
+        }
+
+        .btn-secondary {
+            padding: 0.65rem 1.15rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-glass);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-family: var(--font-main);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Demo Credentials Pill Box */
+        .demo-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 12px;
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+        }
+
+        .demo-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-sub);
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .demo-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .demo-chip {
+            padding: 0.35rem 0.75rem;
+            border-radius: 8px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            color: #93c5fd;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .demo-chip:hover {
+            background: rgba(59, 130, 246, 0.25);
+            border-color: var(--primary);
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 0.85rem 1.15rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            margin-bottom: 1.25rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .alert.error {
+            display: flex;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #fca5a5;
+        }
+
+        .alert.success {
+            display: flex;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            color: #6ee7b7;
+        }
+
+        /* Candidate Cards Grid */
+        .candidate-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .candidate-card {
+            background: rgba(20, 29, 47, 0.7);
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            padding: 1.5rem;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .candidate-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-active);
+            box-shadow: 0 12px 30px rgba(59, 130, 246, 0.15);
+        }
+
+        .candidate-card.selected {
+            background: rgba(30, 58, 138, 0.35);
+            border-color: var(--primary);
+            box-shadow: 0 0 25px var(--primary-glow);
+        }
+
+        .candidate-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.25rem 0.65rem;
+            border-radius: 6px;
+            background: rgba(139, 92, 246, 0.15);
+            color: #c4b5fd;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            margin-bottom: 0.75rem;
+            align-self: flex-start;
+        }
+
+        .candidate-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.25rem;
+        }
+
+        .candidate-party {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1.25rem;
+        }
+
+        .radio-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        .radio-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid var(--border-glass);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .candidate-card.selected .radio-dot {
+            border-color: var(--primary);
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .candidate-card.selected .radio-dot::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #fff;
+        }
+
+        /* Encryption Security Shield Box */
+        .security-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.85rem 1.25rem;
+            border-radius: 12px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            margin-bottom: 1.5rem;
+        }
+
+        .security-badge-icon {
+            font-size: 1.5rem;
+        }
+
+        .security-badge-text h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #34d399;
+        }
+
+        .security-badge-text p {
+            font-size: 0.78rem;
+            color: #a7f3d0;
+        }
+
+        /* Already Voted Receipt Screen */
+        .receipt-card {
+            border-color: rgba(245, 158, 11, 0.3);
+            background: rgba(245, 158, 11, 0.04);
+        }
+
+        .receipt-header-badge {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            padding: 0.4rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .receipt-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        .receipt-table td {
+            padding: 0.85rem 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .receipt-table td:first-child {
+            color: var(--text-muted);
+            width: 35%;
+            font-weight: 500;
+        }
+
+        .receipt-hash-box {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 0.75rem;
+            border-radius: 8px;
+            word-break: break-all;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #38bdf8;
+        }
+
+        /* Live Results Dashboard */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .stat-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-glass);
+            border-radius: 14px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .stat-num {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .tally-row {
+            margin-bottom: 1.25rem;
+        }
+
+        .tally-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.4rem;
+        }
+
+        .tally-name {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .tally-stats {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #93c5fd;
+        }
+
+        .progress-bar-bg {
+            height: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 9999px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 9999px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        /* Admin & Audit Table */
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        .custom-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .custom-table th, .custom-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-glass);
+            text-align: left;
+        }
+
+        .custom-table th {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        .mono {
+            font-family: var(--font-mono);
+            color: #38bdf8;
+            font-size: 0.78rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            border-top: 1px solid var(--border-glass);
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-grid"></div>
+
+    <!-- Header -->
+    <header>
+        <div class="brand-container">
+            <div class="brand-logo">🗳️</div>
+            <div>
+                <div class="brand-name">SecureVote</div>
+            </div>
+            <div class="badge-realtime">
+                <span class="pulse-dot"></span>
+                <span>REAL-TIME AES-256</span>
+            </div>
+        </div>
+
+        <nav class="nav-tabs" role="tablist">
+            <button class="nav-tab active" id="tabVoterPortalBtn" onclick="switchTab('voter-portal')">Voter Portal</button>
+            <button class="nav-tab" id="tabLiveResultsBtn" onclick="switchTab('live-results')">Live Results</button>
+            <button class="nav-tab" id="tabAdminBtn" onclick="switchTab('admin-panel')">Admin Console</button>
+        </nav>
+    </header>
+
+    <!-- Main Container -->
+    <main>
+        <!-- ========================================== -->
+        <!-- VIEW 1: VOTER AUTHENTICATION GATE          -->
+        <!-- ========================================== -->
+        <section id="viewVoterAuth" class="glass-card" style="max-width: 540px; margin: 0 auto;">
+            <div class="card-header">
+                <h1 class="card-title">Constituent Verification</h1>
+                <p class="card-subtitle">Enter your official Voter ID and registered Full Name to proceed.</p>
+            </div>
+
+            <div id="authAlert" class="alert error">
+                <span id="authAlertText">Error message here</span>
+            </div>
+
+            <form id="voterAuthForm" onsubmit="handleVoterVerification(event)">
+                <div class="form-group">
+                    <label class="form-label" for="voterIdInput">Voter ID</label>
+                    <input type="text" id="voterIdInput" class="form-input" placeholder="e.g. V101" required autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="voterNameInput">Full Registered Name</label>
+                    <input type="text" id="voterNameInput" class="form-input" placeholder="e.g. Ananya Sharma" required autocomplete="off">
+                </div>
+
+                <button type="submit" id="continueBtn" class="btn-primary">
+                    <span>Continue to Ballot</span>
+                    <span>→</span>
+                </button>
+            </form>
+
+            <div class="demo-box">
+                <div class="demo-title">⚡ Quick-Test Demo Voters (Click to Auto-Fill):</div>
+                <div class="demo-chips">
+                    <button class="demo-chip" onclick="fillVoter('V101', 'Ananya Sharma')">V101: Ananya Sharma</button>
+                    <button class="demo-chip" onclick="fillVoter('V102', 'Rohan Verma')">V102: Rohan Verma</button>
+                    <button class="demo-chip" onclick="fillVoter('V103', 'Priya Nair')">V103: Priya Nair</button>
+                    <button class="demo-chip" onclick="fillVoter('V104', 'Arjun Singh')">V104: Arjun Singh</button>
+                    <button class="demo-chip" onclick="fillVoter('V105', 'Kavita Reddy')">V105: Kavita Reddy</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 2: ALREADY VOTED RECEIPT SCREEN       -->
+        <!-- ========================================== -->
+        <section id="viewAlreadyVoted" class="glass-card receipt-card" style="max-width: 680px; margin: 0 auto; display: none;">
+            <div style="text-align: center;">
+                <div class="receipt-header-badge">
+                    <span>🔒 BALLOT ALREADY RECORDED</span>
+                </div>
+                <h2 class="card-title">Voting Record Found</h2>
+                <p class="card-subtitle">Our database indicates you have already exercised your vote in this election.</p>
+            </div>
+
+            <table class="receipt-table">
+                <tr>
+                    <td>Voter Identity:</td>
+                    <td><strong id="rvVoterName"></strong> (<span id="rvVoterId"></span>)</td>
+                </tr>
+                <tr>
+                    <td>Date & Timestamp:</td>
+                    <td><strong id="rvTimestamp" style="color: #34d399;"></strong></td>
+                </tr>
+                <tr>
+                    <td>Status:</td>
+                    <td><span style="color: #10b981; font-weight: 700;">● Confirmed & Locked (One Voter, One Vote)</span></td>
+                </tr>
+                <tr>
+                    <td>Encrypted Vote Token:</td>
+                    <td>
+                        <div id="rvEncryptedId" class="receipt-hash-box"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>SHA-256 Receipt Hash:</td>
+                    <td>
+                        <div id="rvReceiptHash" class="receipt-hash-box"></div>
+                    </td>
+                </tr>
+            </table>
+
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                <button class="btn-primary" onclick="switchTab('live-results')">View Live Standings →</button>
+                <button class="btn-secondary" onclick="resetToAuth()">Verify Another Voter</button>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 3: OFFICIAL VOTING BALLOT SCREEN      -->
+        <!-- ========================================== -->
+        <section id="viewVotingBallot" class="glass-card" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <h2 class="card-title" style="font-size: 1.6rem;">Official Election Ballot</h2>
+                    <p class="card-subtitle">Logged in as: <strong id="ballotVoterDisplay" style="color: #fff;"></strong></p>
+                </div>
+                <div class="badge-realtime" style="background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.4); color: #93c5fd;">
+                    <span>⏳ Election Window Active</span>
+                </div>
+            </div>
+
+            <div class="security-badge">
+                <div class="security-badge-icon">🛡️</div>
+                <div class="security-badge-text">
+                    <h4>AES-256 Real-Time Encryption Active</h4>
+                    <p>Your candidate choice will be encrypted on submission and recorded immutably. Once cast, your ballot cannot be altered or re-voted.</p>
+                </div>
+            </div>
+
+            <div id="ballotAlert" class="alert error">
+                <span id="ballotAlertText">Error message</span>
+            </div>
+
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: #cbd5e1;">Select One Candidate:</h3>
+            <div id="candidateCardsContainer" class="candidate-grid">
+                <!-- Dynamically populated candidate cards -->
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem;">
+                <button class="btn-secondary" onclick="resetToAuth()">← Back</button>
+                <button id="submitVoteBtn" class="btn-primary" style="width: auto; padding: 0.95rem 2.5rem;" onclick="submitBallotVote()">
+                    <span>Lock & Cast Encrypted Vote</span>
+                    <span>✓</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 4: VOTE SUCCESS CONFIRMATION MODAL    -->
+        <!-- ========================================== -->
+        <section id="viewVoteSuccess" class="glass-card" style="max-width: 680px; margin: 0 auto; display: none; text-align: center;">
+            <div style="font-size: 3.5rem; margin-bottom: 1rem; animation: bounce 1s infinite alternate;">🎉</div>
+            <h2 class="card-title" style="color: #34d399;">Ballot Cast Successfully!</h2>
+            <p class="card-subtitle" style="margin-bottom: 1.5rem;">Your vote has been encrypted using AES-256 and permanently committed to the election ledger.</p>
+
+            <table class="receipt-table" style="text-align: left;">
+                <tr>
+                    <td>Vote UUID:</td>
+                    <td><strong id="successVoteId" class="mono"></strong></td>
+                </tr>
+                <tr>
+                    <td>Timestamp:</td>
+                    <td><strong id="successTimestamp" style="color: #34d399;"></strong></td>
+                </tr>
+                <tr>
+                    <td>Encrypted Vote Token:</td>
+                    <td>
+                        <div id="successEncryptedId" class="receipt-hash-box"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>SHA-256 Receipt Hash:</td>
+                    <td>
+                        <div id="successHash" class="receipt-hash-box"></div>
+                    </td>
+                </tr>
+            </table>
+
+            <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+                <button class="btn-primary" onclick="switchTab('live-results')">View Live Standings →</button>
+                <button class="btn-secondary" onclick="resetToAuth()">Done</button>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 5: LIVE RESULTS & REAL-TIME DASHBOARD -->
+        <!-- ========================================== -->
+        <section id="viewLiveResults" class="glass-card" style="display: none;">
+            <div class="card-header" style="text-align: left; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                <div>
+                    <h2 class="card-title" id="resultsElectionTitle">Election Standings</h2>
+                    <p class="card-subtitle" id="resultsWindowSubtitle">Polling live updates every 2 seconds</p>
+                </div>
+                <div id="resultsWinnerBadge" class="badge-realtime" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+                    <span>🏆 Winner: Tallying...</span>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div id="statTotalVotes" class="stat-num">0</div>
+                    <div class="stat-label">Total Votes Cast</div>
+                </div>
+                <div class="stat-card">
+                    <div id="statTotalVoters" class="stat-num">0</div>
+                    <div class="stat-label">Registered Voters</div>
+                </div>
+                <div class="stat-card">
+                    <div id="statTurnout" class="stat-num" style="color: #34d399;">0.00%</div>
+                    <div class="stat-label">Turnout Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div id="statStatus" class="stat-num" style="font-size: 1.35rem; color: #93c5fd;">ACTIVE</div>
+                    <div class="stat-label">Election Status</div>
+                </div>
+            </div>
+
+            <!-- Real-time Candidate Progress Bars -->
+            <h3 style="font-size: 1.15rem; font-weight: 600; margin-bottom: 1rem;">Candidate Breakdown:</h3>
+            <div id="resultsTalliesContainer">
+                <!-- Dynamically rendered tallies -->
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 6: ADMIN MANAGEMENT & AUDIT LOG       -->
+        <!-- ========================================== -->
+        <section id="viewAdminPanel" class="glass-card" style="display: none;">
+            <div class="card-header" style="text-align: left;">
+                <h2 class="card-title">Election Administration & Audit Registry</h2>
+                <p class="card-subtitle">Manage candidate rosters, register voters, export official reports, and inspect encrypted audit receipts.</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <!-- Register Candidate Form -->
+                <div style="background: rgba(15, 23, 42, 0.5); padding: 1.5rem; border-radius: 14px; border: 1px solid var(--border-glass);">
+                    <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: #93c5fd;">+ Register Candidate</h3>
+                    <form onsubmit="handleAdminAddCandidate(event)">
+                        <div class="form-group">
+                            <label class="form-label">Candidate ID</label>
+                            <input type="text" id="adminCandidateId" class="form-input" placeholder="e.g. C4" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" id="adminCandidateName" class="form-input" placeholder="e.g. Elena Rostova" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Party Affiliation</label>
+                            <input type="text" id="adminCandidateParty" class="form-input" placeholder="e.g. Green Alliance">
+                        </div>
+                        <button type="submit" class="btn-primary" style="padding: 0.75rem;">Add Candidate</button>
+                    </form>
+                </div>
+
+                <!-- Register Voter Form -->
+                <div style="background: rgba(15, 23, 42, 0.5); padding: 1.5rem; border-radius: 14px; border: 1px solid var(--border-glass);">
+                    <h3 style="font-size: 1.1rem; margin-bottom: 1rem; color: #a7f3d0;">+ Register Eligible Voter</h3>
+                    <form onsubmit="handleAdminAddVoter(event)">
+                        <div class="form-group">
+                            <label class="form-label">Voter ID</label>
+                            <input type="text" id="adminVoterId" class="form-input" placeholder="e.g. V106" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Voter Full Name</label>
+                            <input type="text" id="adminVoterName" class="form-input" placeholder="e.g. Sanjay Verma" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Security PIN</label>
+                            <input type="text" id="adminVoterPin" class="form-input" placeholder="e.g. 1234" maxlength="4" value="0000" required>
+                        </div>
+                        <button type="submit" class="btn-primary" style="padding: 0.75rem; background: linear-gradient(135deg, var(--success), var(--primary));">Add Voter</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Export Summary Button -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.1rem; color: #fff;">Permanent Audit Trail (Secret Ballot Protected)</h3>
+                <button class="btn-secondary" onclick="exportSummaryFile()">📄 Export results_summary.txt</button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Vote UUID</th>
+                            <th>Timestamp</th>
+                            <th>Encrypted Vote Token (AES-256)</th>
+                            <th>SHA-256 Receipt Hash</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditTableBody">
+                        <tr><td colspan="4" style="text-align: center; color: var(--text-sub);">Loading audit ledger...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        Online Voting System &bull; Java OOP &bull; Military-Grade AES-256-GCM Encryption &bull; Real-Time Verifiable Ledger
+    </footer>
+
+    <!-- Frontend Script -->
+    <script>
+        let currentVoter = null;
+        let selectedCandidateId = null;
+        let livePollingInterval = null;
+
+        // --- TAB SWITCHING ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+            
+            // Hide all views
+            document.getElementById('viewVoterAuth').style.display = 'none';
+            document.getElementById('viewAlreadyVoted').style.display = 'none';
+            document.getElementById('viewVotingBallot').style.display = 'none';
+            document.getElementById('viewVoteSuccess').style.display = 'none';
+            document.getElementById('viewLiveResults').style.display = 'none';
+            document.getElementById('viewAdminPanel').style.display = 'none';
+
+            if (tabName === 'voter-portal') {
+                document.getElementById('tabVoterPortalBtn').classList.add('active');
+                if (currentVoter) {
+                    document.getElementById('viewVotingBallot').style.display = 'block';
+                } else {
+                    document.getElementById('viewVoterAuth').style.display = 'block';
+                }
+            } else if (tabName === 'live-results') {
+                document.getElementById('tabLiveResultsBtn').classList.add('active');
+                document.getElementById('viewLiveResults').style.display = 'block';
+                fetchLiveResults();
+            } else if (tabName === 'admin-panel') {
+                document.getElementById('tabAdminBtn').classList.add('active');
+                document.getElementById('viewAdminPanel').style.display = 'block';
+                fetchAuditLog();
+            }
+        }
+
+        function resetToAuth() {
+            currentVoter = null;
+            selectedCandidateId = null;
+            document.getElementById('voterIdInput').value = '';
+            document.getElementById('voterNameInput').value = '';
+            hideAlert('authAlert');
+            switchTab('voter-portal');
+        }
+
+        function fillVoter(id, name) {
+            document.getElementById('voterIdInput').value = id;
+            document.getElementById('voterNameInput').value = name;
+            hideAlert('authAlert');
+        }
+
+        function showAlert(elemId, message) {
+            const el = document.getElementById(elemId);
+            el.querySelector('span').textContent = message;
+            el.style.display = 'flex';
+        }
+
+        function hideAlert(elemId) {
+            document.getElementById(elemId).style.display = 'none';
+        }
+
+        // --- STEP 1: VOTER VERIFICATION ---
+        async function handleVoterVerification(e) {
+            e.preventDefault();
+            hideAlert('authAlert');
+
+            const voterId = document.getElementById('voterIdInput').value.trim();
+            const name = document.getElementById('voterNameInput').value.trim();
+
+            if (!voterId || !name) {
+                showAlert('authAlert', 'Please provide both Voter ID and Name.');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/voter/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ voterId, name })
+                });
+
+                const data = await res.json();
+
+                if (data.status === 'VOTER_NOT_FOUND') {
+                    showAlert('authAlert', `❌ Voter ID '${voterId}' not found in registry.`);
+                    return;
+                }
+                if (data.status === 'NAME_MISMATCH') {
+                    showAlert('authAlert', `❌ Provided name does not match the record on file for ID '${voterId}'.`);
+                    return;
+                }
+
+                if (data.status === 'ALREADY_VOTED') {
+                    // Show Already Voted Screen
+                    document.getElementById('rvVoterName').textContent = data.voterName;
+                    document.getElementById('rvVoterId').textContent = data.voterId;
+                    document.getElementById('rvTimestamp').textContent = data.votedTimestamp || 'Recorded';
+                    document.getElementById('rvEncryptedId').textContent = data.encryptedVoteId || 'AES-256-ENCRYPTED-RECORD';
+                    document.getElementById('rvReceiptHash').textContent = data.receiptHash || 'SHA-256-HASH-ON-FILE';
+
+                    document.getElementById('viewVoterAuth').style.display = 'none';
+                    document.getElementById('viewAlreadyVoted').style.display = 'block';
+                    return;
+                }
+
+                if (data.status === 'ELIGIBLE_TO_VOTE') {
+                    // Transition to Voting Page
+                    currentVoter = { voterId: data.voterId, name: data.voterName };
+                    document.getElementById('ballotVoterDisplay').textContent = `${data.voterName} (${data.voterId})`;
+                    await loadCandidatesForBallot();
+
+                    document.getElementById('viewVoterAuth').style.display = 'none';
+                    document.getElementById('viewVotingBallot').style.display = 'block';
+                }
+            } catch (err) {
+                showAlert('authAlert', 'Network communication error: ' + err.message);
+            }
+        }
+
+        // --- STEP 2: LOAD CANDIDATES & CAST BALLOT ---
+        async function loadCandidatesForBallot() {
+            try {
+                const res = await fetch('/api/candidates');
+                const candidates = await res.json();
+                const container = document.getElementById('candidateCardsContainer');
+                container.innerHTML = '';
+                selectedCandidateId = null;
+
+                candidates.forEach(c => {
+                    const card = document.createElement('div');
+                    card.className = 'candidate-card';
+                    card.id = `candidate-card-${c.candidateId}`;
+                    card.onclick = () => selectCandidate(c.candidateId);
+
+                    card.innerHTML = `
+                        <div>
+                            <div class="candidate-badge">${c.candidateId}</div>
+                            <div class="candidate-name">${c.name}</div>
+                            <div class="candidate-party">${c.party}</div>
+                        </div>
+                        <div class="radio-indicator">
+                            <div class="radio-dot"></div>
+                            <span>Select Candidate</span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function selectCandidate(candidateId) {
+            selectedCandidateId = candidateId;
+            document.querySelectorAll('.candidate-card').forEach(c => c.classList.remove('selected'));
+            const selectedCard = document.getElementById(`candidate-card-${candidateId}`);
+            if (selectedCard) selectedCard.classList.add('selected');
+            hideAlert('ballotAlert');
+        }
+
+        async function submitBallotVote() {
+            if (!selectedCandidateId) {
+                showAlert('ballotAlert', 'Please select a candidate before submitting your vote.');
+                return;
+            }
+            if (!currentVoter) {
+                resetToAuth();
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/voter/cast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        voterId: currentVoter.voterId,
+                        name: currentVoter.name,
+                        candidateId: selectedCandidateId
+                    })
+                });
+
+                const data = await res.json();
+
+                if (!data.success) {
+                    showAlert('ballotAlert', data.error || 'Vote could not be processed.');
+                    return;
+                }
+
+                // Show Success Screen
+                document.getElementById('successVoteId').textContent = data.voteId;
+                document.getElementById('successTimestamp').textContent = data.timestamp;
+                document.getElementById('successEncryptedId').textContent = data.encryptedVoteId;
+                document.getElementById('successHash').textContent = data.receiptHash;
+
+                document.getElementById('viewVotingBallot').style.display = 'none';
+                document.getElementById('viewVoteSuccess').style.display = 'block';
+
+                currentVoter = null; // Clear active voter session
+            } catch (err) {
+                showAlert('ballotAlert', 'Error casting ballot: ' + err.message);
+            }
+        }
+
+        // --- STEP 3: REAL-TIME RESULTS ---
+        async function fetchLiveResults() {
+            try {
+                const res = await fetch('/api/live-results');
+                const data = await res.json();
+
+                document.getElementById('resultsElectionTitle').textContent = data.electionName;
+                document.getElementById('resultsWindowSubtitle').textContent = 
+                    `Window: ${data.votingStart} to ${data.votingEnd} (Live Updates)`;
+
+                document.getElementById('statTotalVotes').textContent = data.totalVotes;
+                document.getElementById('statTotalVoters').textContent = data.totalVoters;
+                document.getElementById('statTurnout').textContent = data.turnout + '%';
+                document.getElementById('statStatus').textContent = data.windowStatus;
+
+                const winnerBadge = document.getElementById('resultsWinnerBadge');
+                if (data.winner) {
+                    winnerBadge.innerHTML = `🏆 Leader: <strong>${data.winner.name}</strong> (${data.winner.party})`;
+                    winnerBadge.style.color = '#34d399';
+                } else {
+                    winnerBadge.innerHTML = `⏳ No votes cast yet`;
+                    winnerBadge.style.color = '#94a3b8';
+                }
+
+                const container = document.getElementById('resultsTalliesContainer');
+                container.innerHTML = '';
+
+                data.tallies.forEach(t => {
+                    const row = document.createElement('div');
+                    row.className = 'tally-row';
+                    row.innerHTML = `
+                        <div class="tally-header">
+                            <div>
+                                <span class="tally-name">${t.name}</span>
+                                <span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 0.5rem;">(${t.party})</span>
+                            </div>
+                            <div class="tally-stats">${t.votes} votes &bull; ${t.share}%</div>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: ${t.share}%;"></div>
+                        </div>
+                    `;
+                    container.appendChild(row);
+                });
+            } catch (err) {
+                console.error('Error fetching live results:', err);
+            }
+        }
+
+        // --- STEP 4: ADMIN HANDLERS ---
+        async function handleAdminAddCandidate(e) {
+            e.preventDefault();
+            const cid = document.getElementById('adminCandidateId').value.trim();
+            const cname = document.getElementById('adminCandidateName').value.trim();
+            const cparty = document.getElementById('adminCandidateParty').value.trim();
+
+            const res = await fetch('/api/admin/candidate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ candidateId: cid, name: cname, party: cparty })
+            });
+            const data = await res.json();
+            alert(data.message || data.error);
+            if (data.success) {
+                document.getElementById('adminCandidateId').value = '';
+                document.getElementById('adminCandidateName').value = '';
+                document.getElementById('adminCandidateParty').value = '';
+            }
+        }
+
+        async function handleAdminAddVoter(e) {
+            e.preventDefault();
+            const vid = document.getElementById('adminVoterId').value.trim();
+            const vname = document.getElementById('adminVoterName').value.trim();
+            const vpin = document.getElementById('adminVoterPin').value.trim();
+
+            const res = await fetch('/api/admin/voter', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ voterId: vid, name: vname, pin: vpin })
+            });
+            const data = await res.json();
+            alert(data.message || data.error);
+            if (data.success) {
+                document.getElementById('adminVoterId').value = '';
+                document.getElementById('adminVoterName').value = '';
+            }
+        }
+
+        async function fetchAuditLog() {
+            try {
+                const res = await fetch('/api/audit-log');
+                const list = await res.json();
+                const tbody = document.getElementById('auditTableBody');
+                tbody.innerHTML = '';
+
+                if (list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-sub);">No votes recorded yet.</td></tr>';
+                    return;
+                }
+
+                list.forEach(v => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="mono">${v.voteId}</td>
+                        <td>${v.timestamp}</td>
+                        <td class="mono">${v.encryptedVoteId.substring(0, 24)}...</td>
+                        <td class="mono">${v.receiptHash.substring(0, 24)}...</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error('Error fetching audit log:', err);
+            }
+        }
+
+        async function exportSummaryFile() {
+            try {
+                const res = await fetch('/api/admin/export', { method: 'POST' });
+                const data = await res.json();
+                alert(data.message || data.error);
+            } catch (err) {
+                alert('Export failed: ' + err.message);
+            }
+        }
+
+        // Start real-time background polling every 2 seconds
+        livePollingInterval = setInterval(() => {
+            if (document.getElementById('viewLiveResults').style.display !== 'none') {
+                fetchLiveResults();
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

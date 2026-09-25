@@ -1,0 +1,35 @@
+========================================================================
+                     OFFICIAL ELECTION RESULTS REPORT                   
+========================================================================
+Election Name    : National Youth Council Election 2026
+Voting Window    : 2026-09-25 19:42:33  TO  2026-09-26 03:42:33
+Report Generated : 2026-09-25 20:42:33
+========================================================================
+
+--- CANDIDATE TALLY ---
+ID         | Candidate Name           | Party            | Votes  | Share   
+------------------------------------------------------------------------
+C1         | Asha Rao                 | Progress Alliance | 3      |  75.00%
+C2         | Vikram Patel             | Civic Unity Party | 1      |  25.00%
+C3         | Meera Joshi              | Independent      | 0      |   0.00%
+------------------------------------------------------------------------
+
+--- PARTICIPATION SUMMARY ---
+Total Votes Cast        : 4
+Total Registered Voters : 5
+Turnout Percentage      : 80.00%
+Declared Winner         : Asha Rao (Progress Alliance) with 3 votes
+
+========================================================================
+                     OFFICIAL VOTE AUDIT LOG                           
+ Note: Individual candidate choices are withheld to preserve ballot     
+ secrecy. Voters may verify their receipt hash against this log.       
+========================================================================
+Vote UUID                              | Timestamp            | SHA-256 Receipt Hash
+--------------------------------------------------------------------------------------------------------------------------------
+b5f01e69-6103-4ab1-91c7-519576708e72   | 2026-09-25 20:42:33  | d1f3c5097aee4999ab12f5480756774a0b738a36dfe0934d5b4abf798fd4496c
+bba68fca-5716-46ec-9e2f-b2269b0e9af7   | 2026-09-25 20:42:33  | 24c0e066f55ca512b16d42b3e57285d2b60503722ecda5ac9aeb316a65ee6ed0
+6f36dac0-8c36-4973-a96d-ff4195e270bc   | 2026-09-25 20:42:33  | 6e0a399a4e55b2e58f7e695f93be79b8a77c8a823c79facc2b406d1df830e06a
+63c026e0-4575-47c4-bfd1-5e10c2d27ce9   | 2026-09-25 20:42:33  | d12043a82be14eb60cf6404d8bb7dcbab77d976cab7594f9116a7f63e1b1cc20
+--------------------------------------------------------------------------------------------------------------------------------
+### END OF REPORT ###
