@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Online Voting System — Official Portal</title>
-    <meta name="description" content="Online Voting System — Minimal and secure voting portal with 2FA Admin Console.">
+    <meta name="description" content="Online Voting System — Minimal and secure voting portal with Real 2FA Authenticator.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
             --bg-card: #ffffff;
             --border-color: #cbd5e1;
             --border-dark: #94a3b8;
-            --border-radius: 4px; /* Crisp, clean, sharp-edge feel */
+            --border-radius: 4px; /* Clean, crisp border radius */
             
             --text-heading: #0f172a;
             --text-body: #334155;
@@ -722,14 +722,14 @@
         <!-- ========================================== -->
         <!-- VIEW 6A: ADMIN LOGIN (STEP 1: USER/PASS)   -->
         <!-- ========================================== -->
-        <section id="viewAdminLogin" class="card" style="max-width: 480px; margin: 0 auto; display: none;">
+        <section id="viewAdminLogin" class="card" style="max-width: 460px; margin: 0 auto; display: none;">
             <div class="card-header">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span class="badge badge-neutral">ADMIN PORTAL</span>
-                    <span class="badge badge-2fa">2FA PROTECTED</span>
+                    <span class="badge badge-neutral">ADMINISTRATOR ACCESS</span>
+                    <span class="badge badge-2fa">REAL 2FA</span>
                 </div>
                 <h2 class="card-title">Administrator Login</h2>
-                <p class="card-desc">Enter your administrative username and master password.</p>
+                <p class="card-desc">Enter your administrator credentials to proceed to two-factor verification.</p>
             </div>
 
             <div id="adminLoginAlert" class="alert error">
@@ -739,55 +739,60 @@
             <form onsubmit="handleAdminLogin(event)">
                 <div class="form-group">
                     <label class="form-label" for="adminUserInput">Admin Username</label>
-                    <input type="text" id="adminUserInput" class="form-input" value="admin" required autocomplete="username">
+                    <input type="text" id="adminUserInput" class="form-input" placeholder="Enter username" required autocomplete="username">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="adminPassInput">Password</label>
-                    <input type="password" id="adminPassInput" class="form-input" value="admin123" required autocomplete="current-password">
+                    <input type="password" id="adminPassInput" class="form-input" placeholder="Enter password" required autocomplete="current-password">
                 </div>
 
-                <button type="submit" class="btn-primary" style="width: 100%;">
-                    Proceed to Two-Factor Auth (2FA) &rarr;
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 0.5rem;">
+                    Next: Two-Factor Authentication &rarr;
                 </button>
             </form>
-
-            <div class="demo-bar">
-                <div class="demo-label">Hard-coded Administrator Credentials:</div>
-                <div style="font-size: 0.85rem; color: var(--text-body);">
-                    Username: <code class="mono">admin</code> &bull; Password: <code class="mono">admin123</code>
-                </div>
-            </div>
         </section>
 
         <!-- ========================================== -->
-        <!-- VIEW 6B: ADMIN 2FA CHALLENGE (STEP 2: OTP) -->
+        <!-- VIEW 6B: REAL TOTP 2FA SCANNER SCREEN      -->
         <!-- ========================================== -->
-        <section id="viewAdmin2FA" class="card" style="max-width: 480px; margin: 0 auto; display: none;">
-            <div class="card-header">
-                <span class="badge badge-2fa" style="margin-bottom: 0.5rem;">STEP 2 OF 2 &bull; 2FA SECURITY</span>
+        <section id="viewAdmin2FA" class="card" style="max-width: 520px; margin: 0 auto; display: none;">
+            <div class="card-header" style="text-align: center;">
+                <span class="badge badge-2fa" style="margin-bottom: 0.5rem;">GOOGLE / MICROSOFT AUTHENTICATOR</span>
                 <h2 class="card-title">Two-Factor Authentication</h2>
-                <p class="card-desc">Enter the 6-digit security code issued to the administrator device.</p>
+                <p class="card-desc">Scan the QR code with your authenticator app on your smartphone.</p>
             </div>
 
             <div id="admin2faAlert" class="alert error">
                 <span id="admin2faAlertText">2FA error</span>
             </div>
 
-            <!-- Demo 2FA Notice showing issued code for easy testing -->
-            <div class="alert info" style="display: flex; margin-bottom: 1.25rem;">
-                <span>🔐 Authenticator Code Sent: <strong id="adminIssuedOtpDisplay" class="mono" style="font-size: 1rem; color: #1e40af;"></strong></span>
+            <!-- Real QR Code Image -->
+            <div style="text-align: center; margin: 1rem 0;">
+                <img id="adminQrCodeImg" src="" alt="Google Authenticator QR Code" style="width: 180px; height: 180px; border: 1px solid var(--border-color); border-radius: 4px; display: inline-block; background: #fff; padding: 4px;">
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    Manual Key: <strong id="adminSecretKeyDisplay" class="mono" style="font-size: 0.9rem; color: var(--text-heading);"></strong>
+                </div>
+            </div>
+
+            <div style="font-size: 0.85rem; color: var(--text-muted); background: #f8fafc; border: 1px solid var(--border-color); border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1.25rem;">
+                <strong>Instructions:</strong>
+                <ol style="margin-left: 1.25rem; margin-top: 0.25rem;">
+                    <li>Open <strong>Google Authenticator</strong> or <strong>Microsoft Authenticator</strong> on your phone.</li>
+                    <li>Tap <strong>+</strong> and scan the QR code above (or enter the key manually).</li>
+                    <li>Enter the 6-digit code currently displayed on your phone screen.</li>
+                </ol>
             </div>
 
             <form onsubmit="handleAdminVerify2FA(event)">
                 <div class="form-group">
-                    <label class="form-label" for="adminOtpInput">6-Digit Security Code (OTP)</label>
-                    <input type="text" id="adminOtpInput" class="form-input mono" placeholder="e.g. 123456" maxlength="6" style="letter-spacing: 4px; font-size: 1.2rem; text-align: center;" required autocomplete="one-time-code">
+                    <label class="form-label" for="adminOtpInput" style="text-align: center;">Enter 6-Digit Code From Phone</label>
+                    <input type="text" id="adminOtpInput" class="form-input mono" placeholder="000000" maxlength="6" style="letter-spacing: 6px; font-size: 1.35rem; text-align: center; font-weight: 600;" required autocomplete="one-time-code">
                 </div>
 
                 <div style="display: flex; gap: 0.75rem;">
                     <button type="button" class="btn-secondary" onclick="showAdminLoginForm()" style="flex: 1;">&larr; Back</button>
-                    <button type="submit" class="btn-primary" style="flex: 2;">Verify &amp; Enter &rarr;</button>
+                    <button type="submit" class="btn-primary" style="flex: 2;">Verify Code &amp; Access Admin Console &rarr;</button>
                 </div>
             </form>
         </section>
@@ -879,16 +884,14 @@
     </main>
 
     <footer>
-        Online Voting System &bull; Java Backend &bull; AES-256-GCM &bull; 2FA Protected Admin Console
+        Online Voting System &bull; Java Backend &bull; AES-256-GCM &bull; Real RFC 6238 TOTP Authenticator
     </footer>
 
-    <!-- Frontend Script Logic -->
     <script>
         let currentVoter = null;
         let selectedCandidateId = null;
         let pollingInterval = null;
 
-        // Admin 2FA State
         let adminTempToken = null;
         let adminToken = localStorage.getItem('secureVote_adminToken') || null;
 
@@ -926,11 +929,13 @@
             }
         }
 
-        // --- ADMIN LOGIN & 2FA WORKFLOW ---
+        // --- REAL TOTP ADMIN WORKFLOW ---
         function showAdminLoginForm() {
             document.getElementById('viewAdminLogin').style.display = 'block';
             document.getElementById('viewAdmin2FA').style.display = 'none';
             document.getElementById('viewAdminPanel').style.display = 'none';
+            document.getElementById('adminUserInput').value = '';
+            document.getElementById('adminPassInput').value = '';
             hideAlert('adminLoginAlert');
         }
 
@@ -940,6 +945,11 @@
 
             const user = document.getElementById('adminUserInput').value.trim();
             const pass = document.getElementById('adminPassInput').value.trim();
+
+            if (!user || !pass) {
+                showAlert('adminLoginAlert', 'Please enter both username and password.');
+                return;
+            }
 
             try {
                 const res = await fetch('/api/admin/login', {
@@ -954,10 +964,11 @@
                     return;
                 }
 
-                // Step 1 Success: Move to 2FA Step 2
+                // Password verified! Setup Real QR Code & Manual Secret Key
                 adminTempToken = data.tempToken;
-                document.getElementById('adminIssuedOtpDisplay').textContent = data.otpCode;
-                document.getElementById('adminOtpInput').value = data.otpCode; // Pre-filled for demo convenience
+                document.getElementById('adminQrCodeImg').src = data.qrCodeUrl;
+                document.getElementById('adminSecretKeyDisplay').textContent = data.secretKey;
+                document.getElementById('adminOtpInput').value = ''; // BLANK, must be typed from phone!
 
                 document.getElementById('viewAdminLogin').style.display = 'none';
                 document.getElementById('viewAdmin2FA').style.display = 'block';
@@ -973,7 +984,7 @@
 
             const otp = document.getElementById('adminOtpInput').value.trim();
             if (!otp || otp.length !== 6) {
-                showAlert('admin2faAlert', 'Please enter a valid 6-digit security code.');
+                showAlert('admin2faAlert', 'Please enter the 6-digit code shown in your authenticator app.');
                 return;
             }
 
@@ -986,11 +997,11 @@
 
                 const data = await res.json();
                 if (!data.success) {
-                    showAlert('admin2faAlert', data.error || 'Invalid 2FA code.');
+                    showAlert('admin2faAlert', data.error || 'Invalid 6-digit code.');
                     return;
                 }
 
-                // 2FA Verified! Save token and unlock Admin Dashboard
+                // Real 2FA Verified!
                 adminToken = data.adminToken;
                 localStorage.setItem('secureVote_adminToken', adminToken);
 
@@ -1017,7 +1028,6 @@
             showAdminLoginForm();
         }
 
-        // --- DIRECT BROWSER FILE DOWNLOAD EXPORT ---
         async function exportAndDownloadSummaryFile() {
             if (!adminToken) {
                 alert('Administrator session expired. Please re-login.');
@@ -1037,7 +1047,6 @@
                     return;
                 }
 
-                // Get file blob from HTTP response attachment
                 const blob = await res.blob();
                 const downloadUrl = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -1216,7 +1225,6 @@
             }
         }
 
-        // --- LIVE RESULTS ---
         async function fetchLiveResults() {
             try {
                 const res = await fetch('/api/live-results');
@@ -1265,7 +1273,6 @@
             }
         }
 
-        // --- ADMIN ACTIONS ---
         async function handleAdminAddCandidate(e) {
             e.preventDefault();
             if (!adminToken) { showAdminLoginForm(); return; }

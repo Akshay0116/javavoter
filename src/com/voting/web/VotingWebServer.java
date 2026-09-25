@@ -9,29 +9,27 @@ import com.voting.exception.VotingException;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 
 /**
  * Built-in embedded HTTP Web Server providing real-time REST endpoints and serving
  * the modern Glassmorphic / Minimal Web Application interface.
- * Features Administrator authentication with Two-Factor Authentication (2FA)
- * and direct file attachment downloading for cloud deployments.
+ * Features Real Two-Factor Authentication (RFC 6238 TOTP) compatible with
+ * Google Authenticator, Microsoft Authenticator, Authy, and Apple Passwords.
  */
 public class VotingWebServer {
     private static final String ADMIN_USER = "admin";
     private static final String ADMIN_PASS = "admin123";
+    private static final String ADMIN_TOTP_SECRET = TotpUtil.DEFAULT_ADMIN_SECRET;
 
     private final VotingManager manager;
     private final int port;
     private HttpServer server;
 
-    // Admin 2FA State Management
-    private final SecureRandom random = new SecureRandom();
+    // Active Admin 2FA Sessions
     private String activeTempToken = null;
-    private String activeOtpCode = null;
-    private long otpExpiresAt = 0;
+    private long tempTokenExpiresAt = 0;
     private final Set<String> validAdminSessions = Collections.synchronizedSet(new HashSet<>());
 
     public VotingWebServer(VotingManager manager, int port) {
@@ -48,7 +46,7 @@ public class VotingWebServer {
         server.createContext("/api/candidates", new CandidatesHandler());
         server.createContext("/api/live-results", new LiveResultsHandler());
 
-        // Admin 2FA Authentication routes
+        // Admin Real TOTP 2FA routes
         server.createContext("/api/admin/login", new AdminLoginHandler());
         server.createContext("/api/admin/verify-2fa", new AdminVerify2faHandler());
         server.createContext("/api/admin/logout", new AdminLogoutHandler());
@@ -85,7 +83,7 @@ public class VotingWebServer {
         return false;
     }
 
-    // --- ADMIN 2FA HANDLERS ---
+    // --- REAL RFC 6238 TOTP 2FA HANDLERS ---
 
     private class AdminLoginHandler implements HttpHandler {
         @Override
@@ -104,20 +102,20 @@ public class VotingWebServer {
             String pass = body.getOrDefault("password", "").trim();
 
             if (ADMIN_USER.equals(user) && ADMIN_PASS.equals(pass)) {
-                // Generate 6-digit OTP and temporary challenge token
-                int codeNum = 100000 + random.nextInt(900000);
-                activeOtpCode = String.valueOf(codeNum);
+                // Password verified. Now require second factor (TOTP Authenticator code).
                 activeTempToken = UUID.randomUUID().toString();
-                otpExpiresAt = System.currentTimeMillis() + (5 * 60 * 1000); // 5 minutes
+                tempTokenExpiresAt = System.currentTimeMillis() + (10 * 60 * 1000); // 10 minutes
 
-                System.out.printf("[SECURITY] 2FA Challenge Issued for Admin. 6-Digit OTP: %s%n", activeOtpCode);
+                String otpAuthUri = TotpUtil.getOtpAuthUri(ADMIN_TOTP_SECRET);
+                String qrCodeUrl = TotpUtil.getQrCodeUrl(otpAuthUri);
 
                 StringBuilder json = new StringBuilder("{");
                 json.append("\"success\":true,");
                 json.append("\"step\":\"2FA_REQUIRED\",");
                 json.append("\"tempToken\":\"").append(activeTempToken).append("\",");
-                json.append("\"otpCode\":\"").append(activeOtpCode).append("\","); // Returned for demo/in-browser verification
-                json.append("\"message\":\"Two-Factor Authentication required. 6-digit security OTP code generated.\"");
+                json.append("\"secretKey\":\"").append(ADMIN_TOTP_SECRET).append("\",");
+                json.append("\"qrCodeUrl\":\"").append(escape(qrCodeUrl)).append("\",");
+                json.append("\"message\":\"Two-Factor Authentication required. Scan the QR code in Google Authenticator or enter the secret key manually.\"");
                 json.append("}");
 
                 sendResponse(exchange, 200, json.toString());
@@ -143,14 +141,16 @@ public class VotingWebServer {
             String tempToken = body.getOrDefault("tempToken", "").trim();
             String otp = body.getOrDefault("otp", "").trim();
 
-            if (activeTempToken != null && activeTempToken.equals(tempToken)
-                    && activeOtpCode != null && activeOtpCode.equals(otp)
-                    && System.currentTimeMillis() <= otpExpiresAt) {
+            if (activeTempToken == null || !activeTempToken.equals(tempToken) || System.currentTimeMillis() > tempTokenExpiresAt) {
+                sendResponse(exchange, 401, "{\"success\":false,\"error\":\"Session expired or invalid login challenge. Please enter your credentials again.\"}");
+                return;
+            }
 
-                // Clear OTP challenge and generate session token
+            // Real mathematical RFC 6238 TOTP verification against current time
+            boolean codeIsValid = TotpUtil.verifyCode(ADMIN_TOTP_SECRET, otp);
+
+            if (codeIsValid) {
                 activeTempToken = null;
-                activeOtpCode = null;
-
                 String sessionToken = UUID.randomUUID().toString();
                 validAdminSessions.add(sessionToken);
 
@@ -162,7 +162,7 @@ public class VotingWebServer {
 
                 sendResponse(exchange, 200, json.toString());
             } else {
-                sendResponse(exchange, 401, "{\"success\":false,\"error\":\"Invalid or expired 2FA security code.\"}");
+                sendResponse(exchange, 401, "{\"success\":false,\"error\":\"Invalid 6-digit security code. Check the current code on your Google/Microsoft Authenticator app and try again.\"}");
             }
         }
     }
@@ -417,13 +417,6 @@ public class VotingWebServer {
         }
     }
 
-    /**
-     * Enhanced Export Handler:
-     * Writes to local disk file "results_summary.txt" AND streams the file content
-     * as an HTTP attachment ("Content-Disposition: attachment; filename=results_summary.txt").
-     * This guarantees that when deployed to any cloud or remote server, clicking Export
-     * immediately downloads the file onto the administrator's local computer!
-     */
     private class ExportHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
